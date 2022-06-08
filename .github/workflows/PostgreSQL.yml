@@ -1,0 +1,50 @@
+name: Test PostgreSQL
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Service containers to run with `container-job`
+    services:
+      # Label used to access the service container
+      postgres:
+        ports:
+          - 5432:5432
+          # Docker Hub image
+        image: postgres
+        # Provide the password for postgres
+        env:
+          POSTGRES_USER: SPRING
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: SPRING
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.4.2
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v3.3.0
+        with:
+          java-version: 17
+          distribution: liberica
+        
+      - name: Build
+        uses: gradle/gradle-build-action@v2
+        env:
+          SPRING_R2DBCE_URL: 'r2dbc:postgresql://localhost:5432/SPRING'
+          SPRING_R2DBC_USERNAME: SPRING
+          SPRING_R2DBC_PASSWORD: postgres
+          SPRING_FLYWAY_URL: 'jdbc:postgresql://localhost:5432/SPRING'
+          SPRING_FLYWAY_USER: SPRING
+          SPRING_FLYWAY_PASSWORD: postgres
+        with:
+          arguments: check --info
